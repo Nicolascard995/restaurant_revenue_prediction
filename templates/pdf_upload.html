@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant Advisor - Carga de PDFs</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .upload-area {
+            border: 2px dashed #ccc;
+            padding: 40px;
+            text-align: center;
+            border-radius: 10px;
+            margin: 20px 0;
+            transition: border-color 0.3s;
+        }
+        .upload-area:hover {
+            border-color: #007bff;
+        }
+        .upload-area.dragover {
+            border-color: #007bff;
+            background-color: #f8f9fa;
+        }
+        .btn {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 5px;
+            display: none;
+        }
+        .result.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .result.error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .cost-info {
+            background-color: #e7f3ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #007bff;
+        }
+        .analysis-section {
+            margin: 15px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .analysis-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 Análisis de PDFs para Restaurantes</h1>
+        <p>Sube PDFs con información relevante para mejorar el análisis de viabilidad de tu restaurante.</p>
+        
+        <div class="cost-info">
+            <h3>💰 Información de Costos</h3>
+            <p><strong>Modelo:</strong> GPT-3.5-turbo (versión económica)</p>
+            <p><strong>Costo estimado:</strong> ~$0.002 por 1K tokens</p>
+            <p><strong>Optimizaciones:</strong> Tokens limitados, respuestas en JSON</p>
+        </div>
+
+        <div class="upload-area" id="uploadArea">
+            <h3>📁 Arrastra tu PDF aquí o haz clic para seleccionar</h3>
+            <p>Solo archivos PDF, máximo 10MB</p>
+            <input type="file" id="pdfFile" accept=".pdf" style="display: none;">
+            <button class="btn" onclick="document.getElementById('pdfFile').click()">Seleccionar PDF</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Analizando PDF...</p>
+        </div>
+
+        <div class="result" id="result"></div>
+
+        <div id="analysisResults" style="display: none;">
+            <h2>📊 Resultados del Análisis</h2>
+            
+            <div class="analysis-section">
+                <h3>🏢 Datos Demográficos</h3>
+                <div id="demographics"></div>
+            </div>
+            
+            <div class="analysis-section">
+                <h3>🍽️ Información de Competencia</h3>
+                <div id="competition"></div>
+            </div>
+            
+            <div class="analysis-section">
+                <h3>📈 Indicadores Económicos</h3>
+                <div id="economics"></div>
+            </div>
+            
+            <div class="analysis-section">
+                <h3>💡 Insights y Recomendaciones</h3>
+                <div id="insights"></div>
+            </div>
+            
+            <div class="analysis-section">
+                <h3>💰 Información de Costos</h3>
+                <div id="costInfo"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const pdfFile = document.getElementById('pdfFile');
+        const loading = document.getElementById('loading');
+        const result = document.getElementById('result');
+        const analysisResults = document.getElementById('analysisResults');
+
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type === 'application/pdf') {
+                handleFile(files[0]);
+            }
+        });
+
+        pdfFile.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        async function handleFile(file) {
+            if (file.size > 10 * 1024 * 1024) {
+                showResult('Error: El archivo es demasiado grande. Máximo 10MB.', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            showLoading(true);
+            hideResult();
+
+            try {
+                // Upload PDF
+                const uploadResponse = await fetch('/api/pdf/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const uploadResult = await uploadResponse.json();
+
+                if (uploadResult.success) {
+                    showResult(`✅ PDF cargado exitosamente: ${uploadResult.filename}`, 'success');
+                    
+                    // Analyze PDF
+                    const analyzeResponse = await fetch(`/api/pdf/${uploadResult.file_id}/analyze`, {
+                        method: 'POST'
+                    });
+
+                    const analyzeResult = await analyzeResponse.json();
+
+                    if (analyzeResult.success) {
+                        showAnalysisResults(analyzeResult);
+                    } else {
+                        showResult(`❌ Error al analizar PDF: ${analyzeResult.error}`, 'error');
+                    }
+                } else {
+                    showResult(`❌ Error al cargar PDF: ${uploadResult.detail}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Error: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function showLoading(show) {
+            loading.style.display = show ? 'block' : 'none';
+        }
+
+        function showResult(message, type) {
+            result.textContent = message;
+            result.className = `result ${type}`;
+            result.style.display = 'block';
+        }
+
+        function hideResult() {
+            result.style.display = 'none';
+        }
+
+        function showAnalysisResults(data) {
+            // Demographics
+            const demographics = document.getElementById('demographics');
+            demographics.innerHTML = formatObject(data.analysis.datos_demograficos || {});
+
+            // Competition
+            const competition = document.getElementById('competition');
+            competition.innerHTML = formatObject(data.analysis.competencia || {});
+
+            // Economics
+            const economics = document.getElementById('economics');
+            economics.innerHTML = formatObject(data.analysis.indicadores_economicos || {});
+
+            // Insights
+            const insights = document.getElementById('insights');
+            insights.innerHTML = formatObject(data.insights || {});
+
+            // Cost info
+            const costInfo = document.getElementById('costInfo');
+            costInfo.innerHTML = `
+                <p><strong>Tokens utilizados:</strong> ${data.tokens_used}</p>
+                <p><strong>Costo estimado:</strong> $${data.cost_estimate.estimated_cost_usd}</p>
+                <p><strong>Modelo:</strong> ${data.cost_estimate.model_used}</p>
+            `;
+
+            analysisResults.style.display = 'block';
+        }
+
+        function formatObject(obj) {
+            if (Object.keys(obj).length === 0) {
+                return '<p>No hay datos disponibles</p>';
+            }
+
+            let html = '<ul>';
+            for (const [key, value] of Object.entries(obj)) {
+                if (Array.isArray(value)) {
+                    html += `<li><strong>${key}:</strong> ${value.join(', ') || 'N/A'}</li>`;
+                } else if (typeof value === 'object') {
+                    html += `<li><strong>${key}:</strong> ${formatObject(value)}</li>`;
+                } else {
+                    html += `<li><strong>${key}:</strong> ${value || 'N/A'}</li>`;
+                }
+            }
+            html += '</ul>';
+            return html;
+        }
+    </script>
+</body>
+</html> 
