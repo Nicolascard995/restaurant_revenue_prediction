@@ -6,7 +6,7 @@ services:
     startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: 3.9.16
+        value: 3.11.18
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_KEY
