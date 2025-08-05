@@ -1,104 +1,104 @@
 # 🍽️ Restaurant Advisor MVP
 
-Un MVP inteligente para ayudar a emprendedores a evaluar la viabilidad de abrir un restaurante, utilizando análisis de datos, inteligencia artificial y base de datos en la nube.
+An intelligent MVP to help entrepreneurs evaluate the viability of opening a restaurant, using data analysis, artificial intelligence, and cloud database.
 
-## 🚀 Características
+## 🚀 Features
 
-- **Análisis de Viabilidad**: Predicción de ingresos basada en datos históricos
-- **Asistente IA**: Consejos personalizados usando GPT-3.5
-- **Base de Datos**: Almacenamiento en Supabase para seguimiento
-- **Interfaz Moderna**: UI profesional con Tailwind CSS
-- **Seguridad**: Validaciones, sanitización y rate limiting
-- **API REST**: Backend con FastAPI
+- **Viability Analysis**: Revenue prediction based on historical data
+- **AI Assistant**: Personalized advice using GPT-3.5
+- **Database**: Storage in Supabase for tracking
+- **Modern Interface**: Professional UI with Tailwind CSS
+- **Security**: Validations, sanitization and rate limiting
+- **REST API**: Backend with FastAPI
 
-## 📋 Requisitos
+## 📋 Requirements
 
 - Python 3.8+
-- Cuenta en Supabase
-- API Key de OpenAI
+- Supabase account
+- OpenAI API Key
 
-## 🛠️ Instalación Rápida
+## 🛠️ Quick Installation
 
-### 1. Clonar y configurar
+### 1. Clone and configure
 ```bash
-git clone <tu-repositorio>
+git clone <your-repository>
 cd restaurant_revenue_prediction
 ```
 
-### 2. Instalar dependencias
+### 2. Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Configurar variables de entorno
+### 3. Configure environment variables
 ```bash
-# Copiar archivo de ejemplo
+# Copy example file
 cp .env.example .env
 
-# Editar con tus credenciales
+# Edit with your credentials
 nano .env
 ```
 
-### 4. Configurar Supabase
-1. Ve a [supabase.com](https://supabase.com)
-2. Crea un proyecto
-3. Ejecuta el SQL en `clean_supabase_setup.sql`
+### 4. Configure Supabase
+1. Go to [supabase.com](https://supabase.com)
+2. Create a project
+3. Execute the SQL in `clean_supabase_setup.sql`
 
-### 5. Entrenar modelo
+### 5. Train model
 ```bash
 python3 train_model.py
 ```
 
-### 6. Ejecutar aplicación
+### 6. Run application
 ```bash
 python3 app.py
 ```
 
-## 🌐 Uso
+## 🌐 Usage
 
-### Acceso Web
+### Web Access
 - **URL**: http://localhost:8000
 - **API Docs**: http://localhost:8000/docs
 - **Health Check**: http://localhost:8000/health
 
-### Funcionalidades
-1. **Análisis de Viabilidad**: Introduce datos del restaurante
-2. **Consejos de IA**: Recibe recomendaciones personalizadas
-3. **Resultados**: Visualización clara de métricas
+### Features
+1. **Viability Analysis**: Enter restaurant data
+2. **AI Advice**: Receive personalized recommendations
+3. **Results**: Clear visualization of metrics
 
-## 🔒 Seguridad
+## 🔒 Security
 
-El MVP implementa múltiples capas de seguridad:
+The MVP implements multiple security layers:
 
-- ✅ **Validación de Entrada**: Pydantic models con sanitización
-- ✅ **Rate Limiting**: Control de requests por IP
-- ✅ **Sanitización**: Remoción de caracteres peligrosos
-- ✅ **Logging**: Registro de actividad sin datos sensibles
-- ✅ **CORS**: Configuración apropiada para APIs
+- ✅ **Input Validation**: Pydantic models with sanitization
+- ✅ **Rate Limiting**: Request control per IP
+- ✅ **Sanitization**: Removal of dangerous characters
+- ✅ **Logging**: Activity recording without sensitive data
+- ✅ **CORS**: Appropriate configuration for APIs
 
-Ver [SECURITY.md](SECURITY.md) para detalles completos.
+See [SECURITY.md](SECURITY.md) for complete details.
 
-## 🏗️ Arquitectura
+## 🏗️ Architecture
 
 ```
 restaurant_revenue_prediction/
-├── app.py                    # Aplicación principal FastAPI
-├── train_model.py           # Entrenamiento del modelo ML
-├── requirements.txt         # Dependencias de Python
-├── .env                     # Variables de entorno
-├── clean_supabase_setup.sql # Configuración de base de datos
+├── app.py                    # Main FastAPI application
+├── train_model.py           # ML model training
+├── requirements.txt         # Python dependencies
+├── .env                     # Environment variables
+├── clean_supabase_setup.sql # Database configuration
 ├── templates/
-│   └── index.html          # Interfaz web principal
-├── static/                  # Archivos estáticos
-├── models/                  # Modelos entrenados
-├── train.csv               # Datos de entrenamiento
-└── README.md               # Este archivo
+│   └── index.html          # Main web interface
+├── static/                  # Static files
+├── models/                  # Trained models
+├── train.csv               # Training data
+└── README.md               # This file
 ```
 
 ## 📊 API Endpoints
 
 ### POST /api/analyze
-Analiza la viabilidad de un restaurante
+Analyze restaurant viability
 
 **Request:**
 ```json
@@ -118,7 +118,7 @@ Analiza la viabilidad de un restaurante
     "success": true,
     "revenue_estimate": 150000.0,
     "viability_analysis": {
-        "viability": "Alta",
+        "viability": "High",
         "annual_revenue": 150000.0,
         "annual_profit": 132000.0,
         "roi": 26.4
@@ -127,81 +127,81 @@ Analiza la viabilidad de un restaurante
 ```
 
 ### POST /api/ai_advice
-Obtiene consejos personalizados de IA
+Get personalized AI advice
 
 ### GET /health
-Verifica el estado de los servicios
+Check service status
 
-## 🔧 Configuración
+## 🔧 Configuration
 
-### Variables de Entorno
+### Environment Variables
 ```env
 # Supabase Configuration
-SUPABASE_URL=https://tu-proyecto.supabase.co
-SUPABASE_KEY=tu-anon-public-key
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your-anon-public-key
 
 # OpenAI Configuration
-OPENAI_API_KEY=sk-tu-api-key-de-openai
+OPENAI_API_KEY=sk-your-openai-api-key
 
 # Model Configuration
 MODEL_PATH=./models/restaurant_model.pkl
 ```
 
-### Base de Datos
-Ejecuta las consultas en `clean_supabase_setup.sql` en tu proyecto de Supabase.
+### Database
+Execute the queries in `clean_supabase_setup.sql` in your Supabase project.
 
-## 📈 Modelo de ML
+## 📈 ML Model
 
-- **Algoritmo**: Random Forest Regressor
-- **Precisión**: R² = 0.84 en entrenamiento
-- **Datos**: 137 restaurantes reales
-- **Características**: 43 variables incluyendo demografía y datos comerciales
+- **Algorithm**: Random Forest Regressor
+- **Accuracy**: R² = 0.84 in training
+- **Data**: 137 real restaurants
+- **Features**: 43 variables including demographics and commercial data
 
-## 🚀 Despliegue
+## 🚀 Deployment
 
-### Desarrollo
+### Development
 ```bash
 python3 app.py
 ```
 
-### Producción
+### Production
 ```bash
 uvicorn app:app --host 0.0.0.0 --port 8000
 ```
 
-### Docker (opcional)
+### Docker (optional)
 ```bash
 docker build -t restaurant-advisor .
 docker run -p 8000:8000 restaurant-advisor
 ```
 
-## 📚 Documentación
+## 📚 Documentation
 
-- [SECURITY.md](SECURITY.md) - Medidas de seguridad
-- [DEMO.md](DEMO.md) - Guía de demostración
-- [ESTADO_FINAL.md](ESTADO_FINAL.md) - Estado del proyecto
+- [SECURITY.md](SECURITY.md) - Security measures
+- [DEPLOYMENT.md](DEPLOYMENT.md) - Deployment guide
+- [ESTADO_FINAL.md](ESTADO_FINAL.md) - Project status
 
-## 🤝 Contribuir
+## 🤝 Contributing
 
-1. Fork el proyecto
-2. Crea una rama para tu feature
-3. Commit tus cambios
-4. Push a la rama
-5. Abre un Pull Request
+1. Fork the project
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Open a Pull Request
 
-## 📄 Licencia
+## 📄 License
 
-Este proyecto está bajo la Licencia MIT.
+This project is under the MIT License.
 
-## 📞 Soporte
+## 📞 Support
 
-Para soporte técnico o preguntas sobre el MVP:
-- Issues en GitHub
-- Email: [tu-email@ejemplo.com]
+For technical support or questions about the MVP:
+- Issues on GitHub
+- Email: [your-email@example.com]
 
 ---
 
-**Desarrollado con ❤️ para ayudar a emprendedores a hacer realidad sus sueños gastronómicos**
+**Developed with ❤️ to help entrepreneurs make their gastronomic dreams come true**
 
 
 
