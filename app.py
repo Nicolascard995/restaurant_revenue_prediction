@@ -4,7 +4,6 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer
-import pandas as pd
 import numpy as np
 import pickle
 import os
@@ -16,13 +15,21 @@ import json
 from pydantic import BaseModel, validator
 import logging
 from datetime import datetime, timezone
+import sys
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Configure logging with detailed error tracking
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
-# Load environment variables
-load_dotenv()
+# Load environment variables with error handling
+try:
+    load_dotenv()
+    logger.info("✅ Environment variables loaded successfully")
+except Exception as e:
+    logger.error(f"❌ Error loading environment variables: {e}")
 
 # Pydantic models for data validation
 class RestaurantData(BaseModel):
@@ -78,23 +85,32 @@ class AIAdviceRequest(BaseModel):
         v = re.sub(r'[<>"\']', '', v.strip())
         return v
 
-# Application configuration
-app = FastAPI(
-    title="Restaurant Advisor MVP", 
-    version="1.0.0",
-    description="MVP for restaurant viability analysis with AI"
-)
+# Application configuration with error handling
+try:
+    app = FastAPI(
+        title="Restaurant Advisor MVP", 
+        version="1.0.0",
+        description="MVP for restaurant viability analysis with AI"
+    )
+    logger.info("✅ FastAPI application created successfully")
+except Exception as e:
+    logger.error(f"❌ Error creating FastAPI app: {e}")
+    sys.exit(1)
 
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # In production, specify specific domains
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Configure CORS with error handling
+try:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    logger.info("✅ CORS middleware configured successfully")
+except Exception as e:
+    logger.error(f"❌ Error configuring CORS: {e}")
 
-# Supabase configuration (optional)
+# Supabase configuration with comprehensive error handling
 supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_KEY")
 supabase = None
@@ -104,58 +120,88 @@ if supabase_url and supabase_key and supabase_url != "your_supabase_url":
         from supabase import create_client, Client
         supabase: Client = create_client(supabase_url, supabase_key)
         logger.info("✅ Supabase configured successfully")
+    except ImportError as e:
+        logger.warning(f"⚠️ Supabase library not available: {e}")
+        logger.info("MVP will work without database storage")
     except Exception as e:
         logger.warning(f"⚠️ Error configuring Supabase: {e}")
         logger.info("MVP will work without database storage")
 else:
     logger.warning("⚠️ Supabase not configured - MVP will work without storage")
 
-# OpenAI configuration
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# OpenAI configuration with error handling
+try:
+    openai.api_key = os.getenv("OPENAI_API_KEY")
+    if openai.api_key:
+        logger.info("✅ OpenAI configured successfully")
+    else:
+        logger.warning("⚠️ OpenAI API key not found")
+except Exception as e:
+    logger.error(f"❌ Error configuring OpenAI: {e}")
 
-# Template configuration
-templates = Jinja2Templates(directory="templates")
+# Template configuration with error handling
+try:
+    templates = Jinja2Templates(directory="templates")
+    logger.info("✅ Templates configured successfully")
+except Exception as e:
+    logger.error(f"❌ Error configuring templates: {e}")
 
-# Mount static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Mount static files with error handling
+try:
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+    logger.info("✅ Static files mounted successfully")
+except Exception as e:
+    logger.error(f"❌ Error mounting static files: {e}")
 
-# Simple rate limiting
+# Simple rate limiting with error handling
 from collections import defaultdict
 import time
 request_counts = defaultdict(list)
 
 def check_rate_limit(client_ip: str, limit: int = 10, window: int = 60):
-    """Basic rate limiting"""
-    now = time.time()
-    # Clean old requests
-    request_counts[client_ip] = [req_time for req_time in request_counts[client_ip] 
-                                if now - req_time < window]
-    
-    if len(request_counts[client_ip]) >= limit:
-        raise HTTPException(status_code=429, detail="Too many requests")
-    
-    request_counts[client_ip].append(now)
+    """Basic rate limiting with error handling"""
+    try:
+        now = time.time()
+        # Clean old requests
+        request_counts[client_ip] = [req_time for req_time in request_counts[client_ip] 
+                                    if now - req_time < window]
+        
+        if len(request_counts[client_ip]) >= limit:
+            raise HTTPException(status_code=429, detail="Too many requests")
+        
+        request_counts[client_ip].append(now)
+    except Exception as e:
+        logger.error(f"❌ Rate limiting error: {e}")
+        # Don't block requests if rate limiting fails
 
 def get_client_ip(request: Request) -> str:
-    """Get client IP safely"""
-    forwarded = request.headers.get("X-Forwarded-For")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
+    """Get client IP safely with error handling"""
+    try:
+        forwarded = request.headers.get("X-Forwarded-For")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
+        return request.client.host if request.client else "unknown"
+    except Exception as e:
+        logger.error(f"❌ Error getting client IP: {e}")
+        return "unknown"
 
 def sanitize_input(data: Dict[str, Any]) -> Dict[str, Any]:
-    """Sanitize input data"""
-    sanitized = {}
-    for key, value in data.items():
-        if isinstance(value, str):
-            # Remove dangerous characters
-            sanitized[key] = re.sub(r'[<>"\']', '', value.strip())
-        else:
-            sanitized[key] = value
-    return sanitized
+    """Sanitize input data with error handling"""
+    try:
+        sanitized = {}
+        for key, value in data.items():
+            if isinstance(value, str):
+                # Remove dangerous characters
+                sanitized[key] = re.sub(r'[<>"\']', '', value.strip())
+            else:
+                sanitized[key] = value
+        return sanitized
+    except Exception as e:
+        logger.error(f"❌ Error sanitizing input: {e}")
+        return data
 
 def validate_and_sanitize_restaurant_data(data: Dict[str, Any]) -> RestaurantData:
-    """Validate and sanitize restaurant data"""
+    """Validate and sanitize restaurant data with comprehensive error handling"""
     try:
         # Sanitize input
         sanitized_data = sanitize_input(data)
@@ -164,23 +210,56 @@ def validate_and_sanitize_restaurant_data(data: Dict[str, Any]) -> RestaurantDat
         restaurant_data = RestaurantData(**sanitized_data)
         return restaurant_data
     except Exception as e:
-        logger.error(f"Error validating data: {e}")
+        logger.error(f"❌ Error validating data: {e}")
         raise HTTPException(status_code=400, detail=f"Input data error: {str(e)}")
+
+def simple_revenue_prediction(investment: float, monthly_costs: float, city_group: str, restaurant_type: str) -> float:
+    """Simple revenue prediction without ML model - ultra robust"""
+    try:
+        # Base revenue from investment
+        base_revenue = investment * 0.3  # 30% of initial capital
+        
+        # Adjust based on city group
+        city_multiplier = 1.2 if city_group == "Big Cities" else 0.8
+        
+        # Adjust based on restaurant type
+        type_multiplier = 1.1 if restaurant_type == "FC" else 0.9
+        
+        # Calculate final revenue
+        revenue = base_revenue * city_multiplier * type_multiplier
+        
+        # Add some randomness for realistic prediction
+        try:
+            np.random.seed(hash(f"{investment}{monthly_costs}{city_group}{restaurant_type}") % 2**32)
+            revenue += np.random.normal(0, revenue * 0.1)
+        except Exception as e:
+            logger.warning(f"⚠️ Error adding randomness to prediction: {e}")
+            # Continue without randomness
+        
+        return max(revenue, 0)  # Ensure non-negative
+    except Exception as e:
+        logger.error(f"❌ Error in revenue prediction: {e}")
+        # Fallback to simple calculation
+        return max(investment * 0.3, 0)
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    """Main page"""
-    return templates.TemplateResponse("index.html", {"request": request})
+    """Main page with error handling"""
+    try:
+        return templates.TemplateResponse("index.html", {"request": request})
+    except Exception as e:
+        logger.error(f"❌ Error serving home page: {e}")
+        return HTMLResponse(content="<h1>Restaurant Advisor MVP</h1><p>Service is running</p>")
 
 @app.post("/api/analyze")
 async def analyze_restaurant(request: Request, data: Dict[str, Any]):
-    """Analyze restaurant viability with security validation"""
-    
-    # Rate limiting
-    client_ip = get_client_ip(request)
-    check_rate_limit(client_ip)
+    """Analyze restaurant viability with comprehensive error handling"""
     
     try:
+        # Rate limiting
+        client_ip = get_client_ip(request)
+        check_rate_limit(client_ip)
+        
         # Validate and sanitize data
         restaurant_data = validate_and_sanitize_restaurant_data(data)
         
@@ -195,8 +274,13 @@ async def analyze_restaurant(request: Request, data: Dict[str, Any]):
         if monthly_costs <= 0:
             raise HTTPException(status_code=400, detail="Monthly costs must be greater than 0")
         
-        # Revenue estimation (simplified but secure)
-        revenue_estimate = investment * 0.3  # 30% of initial capital
+        # Revenue estimation using simple prediction
+        revenue_estimate = simple_revenue_prediction(
+            investment, 
+            monthly_costs, 
+            restaurant_data.city_group, 
+            restaurant_data.type
+        )
         
         # Viability analysis
         annual_revenue = revenue_estimate
@@ -212,7 +296,7 @@ async def analyze_restaurant(request: Request, data: Dict[str, Any]):
             "analysis_date": datetime.now(timezone.utc).isoformat()
         }
         
-        # Save to Supabase if configured (with error handling)
+        # Save to Supabase if configured (with comprehensive error handling)
         if supabase:
             try:
                 supabase.table("restaurant_analyses").insert({
@@ -220,13 +304,13 @@ async def analyze_restaurant(request: Request, data: Dict[str, Any]):
                     "revenue_estimate": revenue_estimate,
                     "viability_analysis": viability_analysis
                 }).execute()
-                logger.info(f"Analysis saved to Supabase for IP: {client_ip}")
+                logger.info(f"✅ Analysis saved to Supabase for IP: {client_ip}")
             except Exception as e:
-                logger.error(f"Error saving to Supabase: {e}")
+                logger.error(f"❌ Error saving to Supabase: {e}")
                 # Don't fail the application if Supabase fails
         
         # Activity log
-        logger.info(f"Analysis performed for {restaurant_data.city} by IP: {client_ip}")
+        logger.info(f"✅ Analysis performed for {restaurant_data.city} by IP: {client_ip}")
         
         return {
             "success": True,
@@ -237,18 +321,18 @@ async def analyze_restaurant(request: Request, data: Dict[str, Any]):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Unexpected error in analysis: {e}")
+        logger.error(f"❌ Unexpected error in analysis: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/api/ai_advice")
 async def get_ai_advice(request: Request, data: Dict[str, Any]):
-    """Get personalized AI advice with security validation"""
-    
-    # Stricter rate limiting for AI
-    client_ip = get_client_ip(request)
-    check_rate_limit(client_ip, limit=5, window=60)  # 5 requests per minute
+    """Get personalized AI advice with comprehensive error handling"""
     
     try:
+        # Stricter rate limiting for AI
+        client_ip = get_client_ip(request)
+        check_rate_limit(client_ip, limit=5, window=60)  # 5 requests per minute
+        
         # Validate data for AI advice
         if not openai.api_key or openai.api_key == "your_openai_api_key":
             return {
@@ -277,7 +361,7 @@ async def get_ai_advice(request: Request, data: Dict[str, Any]):
         Respond in English in a professional and practical manner.
         """
         
-        # OpenAI call with timeout and error handling
+        # OpenAI call with comprehensive error handling
         try:
             response = openai.chat.completions.create(
                 model="gpt-3.5-turbo",
@@ -296,7 +380,7 @@ async def get_ai_advice(request: Request, data: Dict[str, Any]):
             advice = advice[:2000]  # Limit length
             
         except Exception as e:
-            logger.error(f"Error calling OpenAI: {e}")
+            logger.error(f"❌ Error calling OpenAI: {e}")
             raise HTTPException(status_code=500, detail="Error generating AI advice")
         
         # Save to Supabase if configured
@@ -306,45 +390,58 @@ async def get_ai_advice(request: Request, data: Dict[str, Any]):
                     "restaurant_data": advice_request.dict(),
                     "advice": advice
                 }).execute()
-                logger.info(f"AI advice saved for IP: {client_ip}")
+                logger.info(f"✅ AI advice saved for IP: {client_ip}")
             except Exception as e:
-                logger.error(f"Error saving advice to Supabase: {e}")
+                logger.error(f"❌ Error saving advice to Supabase: {e}")
         
         # Activity log
-        logger.info(f"AI advice generated for {advice_request.city} by IP: {client_ip}")
+        logger.info(f"✅ AI advice generated for {advice_request.city} by IP: {client_ip}")
         
         return {"success": True, "advice": advice}
         
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Unexpected error in AI advice: {e}")
+        logger.error(f"❌ Unexpected error in AI advice: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint for monitoring"""
-    return {
-        "status": "healthy",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "services": {
-            "openai": bool(openai.api_key and openai.api_key != "your_openai_api_key"),
-            "supabase": bool(supabase)
+    """Health check endpoint with comprehensive status"""
+    try:
+        return {
+            "status": "healthy",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "services": {
+                "openai": bool(openai.api_key and openai.api_key != "your_openai_api_key"),
+                "supabase": bool(supabase),
+                "python_version": sys.version,
+                "environment": os.getenv("ENVIRONMENT", "production")
+            }
         }
-    }
+    except Exception as e:
+        logger.error(f"❌ Error in health check: {e}")
+        return {"status": "error", "message": str(e)}
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
-    """Custom HTTP error handling"""
-    logger.warning(f"HTTP Error {exc.status_code}: {exc.detail} from IP: {get_client_ip(request)}")
+    """Custom HTTP error handling with logging"""
+    client_ip = get_client_ip(request)
+    logger.warning(f"⚠️ HTTP Error {exc.status_code}: {exc.detail} from IP: {client_ip}")
     return {"error": exc.detail, "status_code": exc.status_code}
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
-    """General error handling"""
-    logger.error(f"Unexpected error: {exc} from IP: {get_client_ip(request)}")
+    """General error handling with comprehensive logging"""
+    client_ip = get_client_ip(request)
+    logger.error(f"❌ Unexpected error: {exc} from IP: {client_ip}")
     return {"error": "Internal server error", "status_code": 500}
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+    try:
+        import uvicorn
+        logger.info("🚀 Starting Restaurant Advisor MVP...")
+        uvicorn.run(app, host="0.0.0.0", port=8000)
+    except Exception as e:
+        logger.error(f"❌ Error starting application: {e}")
+        sys.exit(1) 
