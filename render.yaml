@@ -4,11 +4,11 @@ services:
     env: python
     buildCommand: |
       pip install --upgrade pip
-      pip install -r requirements_robust.txt
+      pip install -r requirements.txt
     startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT --workers 1
     envVars:
       - key: PYTHON_VERSION
-        value: 3.9.18
+        value: 3.11.7
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_KEY
@@ -18,4 +18,12 @@ services:
       - key: MODEL_PATH
         value: ./models/restaurant_model.pkl
     healthCheckPath: /health
-    autoDeploy: true 
+    autoDeploy: true
+    plan: free
+    buildFilter:
+      paths:
+        - requirements.txt
+        - app.py
+        - models/
+        - templates/
+        - static/ 
